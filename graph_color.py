@@ -1,57 +1,69 @@
 #!/usr/bin/env python3
-"""graph_color: Graph coloring (greedy + backtracking)."""
+"""graph_color - Graph coloring algorithms (greedy, backtracking)."""
 import sys
 
-def greedy_color(adj):
-    n = len(adj)
-    colors = [-1] * n
-    for node in range(n):
-        used = {colors[nb] for nb in adj[node] if colors[nb] != -1}
-        c = 0
-        while c in used: c += 1
-        colors[node] = c
-    return colors
+class Graph:
+    def __init__(self, n):
+        self.n = n
+        self.adj = [[] for _ in range(n)]
 
-def backtrack_color(adj, k):
-    n = len(adj)
-    colors = [-1] * n
-    def solve(node):
-        if node == n: return True
+    def add_edge(self, u, v):
+        self.adj[u].append(v)
+        self.adj[v].append(u)
+
+    def greedy_color(self):
+        colors = [-1]*self.n
+        for u in range(self.n):
+            used = set(colors[v] for v in self.adj[u] if colors[v] != -1)
+            c = 0
+            while c in used:
+                c += 1
+            colors[u] = c
+        return colors
+
+    def backtrack_color(self, k):
+        colors = [-1]*self.n
+        if self._bt(colors, 0, k):
+            return colors
+        return None
+
+    def _bt(self, colors, node, k):
+        if node == self.n:
+            return True
         for c in range(k):
-            if all(colors[nb] != c for nb in adj[node] if colors[nb] != -1):
+            if all(colors[v] != c for v in self.adj[node]):
                 colors[node] = c
-                if solve(node + 1): return True
+                if self._bt(colors, node + 1, k):
+                    return True
                 colors[node] = -1
         return False
-    return colors if solve(0) else None
 
-def chromatic_number(adj):
-    for k in range(1, len(adj) + 1):
-        if backtrack_color(adj, k) is not None:
-            return k
-    return len(adj)
+    def chromatic_number(self):
+        for k in range(1, self.n + 1):
+            if self.backtrack_color(k) is not None:
+                return k
+        return self.n
 
 def test():
-    # Triangle (K3) needs 3 colors
-    adj = [[1,2],[0,2],[0,1]]
-    c = greedy_color(adj)
-    for i in range(3):
-        for j in adj[i]:
-            assert c[i] != c[j]
-    assert chromatic_number(adj) == 3
-    # Bipartite (K2,2) needs 2
-    adj2 = [[2,3],[2,3],[0,1],[0,1]]
-    assert chromatic_number(adj2) == 2
-    # Single node
-    assert chromatic_number([[]]) == 1
-    # Path graph
-    adj3 = [[1],[0,2],[1]]
-    assert chromatic_number(adj3) == 2
-    # K4
-    adj4 = [[1,2,3],[0,2,3],[0,1,3],[0,1,2]]
-    assert chromatic_number(adj4) == 4
+    g = Graph(5)
+    g.add_edge(0,1); g.add_edge(0,2); g.add_edge(1,2)
+    g.add_edge(1,3); g.add_edge(2,4); g.add_edge(3,4)
+    colors = g.greedy_color()
+    for u in range(5):
+        for v in g.adj[u]:
+            assert colors[u] != colors[v]
+    result = g.backtrack_color(3)
+    assert result is not None
+    for u in range(5):
+        for v in g.adj[u]:
+            assert result[u] != result[v]
+    tri = Graph(3)
+    tri.add_edge(0,1); tri.add_edge(1,2); tri.add_edge(0,2)
+    assert tri.chromatic_number() == 3
+    assert tri.backtrack_color(2) is None
+    ind = Graph(3)
+    assert ind.chromatic_number() == 1
     print("All tests passed!")
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "test": test()
-    else: print("Usage: graph_color.py test")
+    test() if "--test" in sys.argv else print("graph_color: Graph coloring. Use --test")
