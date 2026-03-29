@@ -1,11 +1,11 @@
 # graph_color
 
-graph_color - Graph coloring with greedy and backtracking algorithms.
+graph_color: Graph coloring (greedy + backtracking).
+
+Single-file, zero-dependency Python CLI.
 
 ## Usage
 
 ```bash
-python3 graph_color.py --test
+python3 graph_color.py test
 ```
-
-Zero dependencies. Python 3.8+.

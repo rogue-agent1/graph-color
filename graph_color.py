@@ -1,58 +1,57 @@
 #!/usr/bin/env python3
-"""graph_color - Graph coloring with greedy and backtracking algorithms."""
+"""graph_color: Graph coloring (greedy + backtracking)."""
 import sys
-from collections import defaultdict
 
-class Graph:
-    def __init__(self):
-        self.adj = defaultdict(set)
-    def add_edge(self, u, v):
-        self.adj[u].add(v); self.adj[v].add(u)
-    @property
-    def nodes(self): return set(self.adj.keys())
-
-def greedy_color(g):
-    colors = {}
-    for node in sorted(g.nodes):
-        used = {colors[n] for n in g.adj[node] if n in colors}
+def greedy_color(adj):
+    n = len(adj)
+    colors = [-1] * n
+    for node in range(n):
+        used = {colors[nb] for nb in adj[node] if colors[nb] != -1}
         c = 0
         while c in used: c += 1
         colors[node] = c
     return colors
 
-def is_valid(g, colors):
-    for u in g.nodes:
-        for v in g.adj[u]:
-            if u in colors and v in colors and colors[u] == colors[v]:
-                return False
-    return True
-
-def chromatic_backtrack(g, max_colors):
-    nodes = sorted(g.nodes)
-    colors = {}
-    def bt(i):
-        if i == len(nodes): return True
-        node = nodes[i]
-        for c in range(max_colors):
-            if all(colors.get(n) != c for n in g.adj[node]):
+def backtrack_color(adj, k):
+    n = len(adj)
+    colors = [-1] * n
+    def solve(node):
+        if node == n: return True
+        for c in range(k):
+            if all(colors[nb] != c for nb in adj[node] if colors[nb] != -1):
                 colors[node] = c
-                if bt(i + 1): return True
-                del colors[node]
+                if solve(node + 1): return True
+                colors[node] = -1
         return False
-    return colors if bt(0) else None
+    return colors if solve(0) else None
+
+def chromatic_number(adj):
+    for k in range(1, len(adj) + 1):
+        if backtrack_color(adj, k) is not None:
+            return k
+    return len(adj)
 
 def test():
-    g = Graph()
-    for u, v in [(0,1),(1,2),(2,3),(3,0),(0,2)]:
-        g.add_edge(u, v)
-    c = greedy_color(g)
-    assert is_valid(g, c)
-    assert max(c.values()) <= 3
-    c2 = chromatic_backtrack(g, 3)
-    assert c2 is not None and is_valid(g, c2)
-    c3 = chromatic_backtrack(g, 2)
-    assert c3 is None  # K4 minus edge needs 3
-    print("graph_color: all tests passed")
+    # Triangle (K3) needs 3 colors
+    adj = [[1,2],[0,2],[0,1]]
+    c = greedy_color(adj)
+    for i in range(3):
+        for j in adj[i]:
+            assert c[i] != c[j]
+    assert chromatic_number(adj) == 3
+    # Bipartite (K2,2) needs 2
+    adj2 = [[2,3],[2,3],[0,1],[0,1]]
+    assert chromatic_number(adj2) == 2
+    # Single node
+    assert chromatic_number([[]]) == 1
+    # Path graph
+    adj3 = [[1],[0,2],[1]]
+    assert chromatic_number(adj3) == 2
+    # K4
+    adj4 = [[1,2,3],[0,2,3],[0,1,3],[0,1,2]]
+    assert chromatic_number(adj4) == 4
+    print("All tests passed!")
 
 if __name__ == "__main__":
-    test() if "--test" in sys.argv else print("Usage: graph_color.py --test")
+    if len(sys.argv) > 1 and sys.argv[1] == "test": test()
+    else: print("Usage: graph_color.py test")
